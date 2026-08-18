@@ -16,6 +16,8 @@
       -webkit-user-select: none;
       overflow: hidden;
       position: relative;
+      height: 100vh;
+      margin: 0;
     }
     .score-board {
       font-size: 2rem;
@@ -37,7 +39,32 @@
       transform: scale(0.8);
     }
 
-    /* 強化メニューを開くボタン */
+    /* 🌾 接近してくる農家の人アニメーション 🌾 */
+    .farmer-char {
+      position: absolute;
+      font-size: 3rem;
+      bottom: 20px;
+      pointer-events: none;
+      animation: walkIn 1.5s ease-out forwards;
+      z-index: 50;
+    }
+
+    @keyframes walkIn {
+      0% {
+        transform: translateY(100px) scale(0.2);
+        opacity: 0;
+      }
+      50% {
+        transform: translateY(-10px) scale(1.1);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* 強化メニューボタン */
     .menu-open-btn {
       font-size: 1.2rem;
       font-weight: bold;
@@ -52,7 +79,7 @@
       touch-action: manipulation;
     }
 
-    /* 強化メニュー（モーダル背景） */
+    /* モーダル背景 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -72,6 +99,8 @@
       border-radius: 15px;
       width: 85%;
       max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
@@ -154,21 +183,28 @@
     <button id="reset-btn" class="system-btn">データをリセットして最初から</button>
   </div>
 
+  <!-- 農家の人たちが並ぶエリア -->
+  <div id="farmer-field"></div>
+
   <!-- 強化メニュー モーダル -->
   <div id="shop-modal" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-title">🛠 強化メニュー</div>
       
-      <!-- 1. 自動収穫機 -->
       <button id="buy-auto-btn" class="shop-btn" disabled>
         自動収穫機 (所持: <span id="auto-count">0</span>)<br>
         コスト: <span id="auto-cost">10</span> そらまめ
       </button>
 
-      <!-- 2. 農薬撒き機（自動収穫機1つ以上で表示） -->
       <button id="buy-pesticide-btn" class="shop-btn" style="display: none;" disabled>
-        農薬撒き機 🧪 (収穫2倍)<br>
+        農薬撒き機 🧪 (全自動収穫2倍)<br>
         <span id="pesticide-status">コスト: 50 そらまめ</span>
+      </button>
+
+      <button id="buy-farmer-btn" class="shop-btn" style="display: none;" disabled>
+        農家の人 🌾 (所持: <span id="farmer-count">0</span>)<br>
+        3秒ごとに10個収穫<br>
+        コスト: <span id="farmer-cost">500</span> そらまめ
       </button>
 
       <button id="close-menu-btn" class="close-btn">閉じる</button>
@@ -181,6 +217,8 @@
     let autoHarvesterCost = 10;
     let hasPesticide = false;
     let pesticideCost = 50;
+    let farmerCount = 0;
+    let farmerCost = 500;
 
     const mameCountEl = document.getElementById('mame-count');
     const harvestBtn = document.getElementById('harvest-btn');
@@ -194,6 +232,12 @@
     
     const buyPesticideBtn = document.getElementById('buy-pesticide-btn');
     const pesticideStatusEl = document.getElementById('pesticide-status');
+
+    const buyFarmerBtn = document.getElementById('buy-farmer-btn');
+    const farmerCountEl = document.getElementById('farmer-count');
+    const farmerCostEl = document.getElementById('farmer-cost');
+    const farmerField = document.getElementById('farmer-field');
+
     const resetBtn = document.getElementById('reset-btn');
 
     function saveGame() {
@@ -201,7 +245,9 @@
         mames: mames,
         autoHarvesterCount: autoHarvesterCount,
         autoHarvesterCost: autoHarvesterCost,
-        hasPesticide: hasPesticide
+        hasPesticide: hasPesticide,
+        farmerCount: farmerCount,
+        farmerCost: farmerCost
       };
       localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
     }
@@ -214,6 +260,26 @@
         autoHarvesterCount = data.autoHarvesterCount || 0;
         autoHarvesterCost = data.autoHarvesterCost || 10;
         hasPesticide = data.hasPesticide || false;
+        farmerCount = data.farmerCount || 0;
+        farmerCost = data.farmerCost || 500;
+      }
+    }
+
+    // 🌾 農家の人を表示する関数
+    function renderFarmers() {
+      farmerField.innerHTML = '';
+      // 最大8人まで画面下にズラッと並べる
+      const displayCount = Math.min(farmerCount, 8);
+      for (let i = 0; i < displayCount; i++) {
+        const farmer = document.createElement('div');
+        farmer.className = 'farmer-char';
+        farmer.textContent = '👨‍🌾';
+        
+        // 画面の幅に合わせて分散配置
+        const leftPercent = 10 + (i * 11);
+        farmer.style.left = `${leftPercent}%`;
+        
+        farmerField.appendChild(farmer);
       }
     }
 
@@ -223,8 +289,7 @@
       autoCountEl.textContent = autoHarvesterCount;
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
 
-      // 自動収穫機が1つ以上あれば「農薬撒き機」を表示
-      if (autoHarvesterCount >= 1) {
+      if (autoHarvesterCount >= 1 || hasPesticide) {
         buyPesticideBtn.style.display = "block";
         if (hasPesticide) {
           buyPesticideBtn.disabled = true;
@@ -236,9 +301,19 @@
       } else {
         buyPesticideBtn.style.display = "none";
       }
+
+      if (autoHarvesterCount >= 10 || farmerCount > 0) {
+        buyFarmerBtn.style.display = "block";
+        farmerCountEl.textContent = farmerCount;
+        farmerCostEl.textContent = farmerCost;
+        buyFarmerBtn.disabled = (mames < farmerCost);
+      } else {
+        buyFarmerBtn.style.display = "none";
+      }
+
+      renderFarmers();
     }
 
-    // iOSズーム防止
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (event) => {
       const now = (new Date()).getTime();
@@ -270,7 +345,6 @@
       setTimeout(() => pop.remove(), 600);
     }
 
-    // 連打（touchstart）で即反応する爆速タップ処理！
     harvestBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
       mames += 1;
@@ -279,7 +353,6 @@
       createPopNumber(e);
     });
     harvestBtn.addEventListener('mousedown', (e) => {
-      // タッチ非対応（PC等）のためのフォールバック
       if (!('ontouchstart' in window)) {
         mames += 1;
         updateDisplay();
@@ -288,11 +361,9 @@
       }
     });
 
-    // モーダル開閉
     openMenuBtn.addEventListener('click', () => { shopModal.style.display = 'flex'; });
     closeMenuBtn.addEventListener('click', () => { shopModal.style.display = 'none'; });
 
-    // 自動収穫機 購入
     buyAutoBtn.addEventListener('click', () => {
       if (mames >= autoHarvesterCost) {
         mames -= autoHarvesterCost;
@@ -303,7 +374,6 @@
       }
     });
 
-    // 農薬撒き機 購入（収穫倍率2倍！）
     buyPesticideBtn.addEventListener('click', () => {
       if (!hasPesticide && mames >= pesticideCost) {
         mames -= pesticideCost;
@@ -313,7 +383,16 @@
       }
     });
 
-    // データリセット
+    buyFarmerBtn.addEventListener('click', () => {
+      if (mames >= farmerCost) {
+        mames -= farmerCost;
+        farmerCount += 1;
+        farmerCost = Math.floor(farmerCost * 1.5);
+        updateDisplay();
+        saveGame();
+      }
+    });
+
     resetBtn.addEventListener('click', () => {
       if (confirm('本当にリセットしますか？')) {
         localStorage.removeItem('soramame_kingdom_save');
@@ -321,11 +400,12 @@
         autoHarvesterCount = 0;
         autoHarvesterCost = 10;
         hasPesticide = false;
+        farmerCount = 0;
+        farmerCost = 500;
         updateDisplay();
       }
     });
 
-    // 自動収穫ループ（農薬撒き機があれば効率2倍！）
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         const multiplier = hasPesticide ? 2 : 1;
@@ -334,6 +414,15 @@
         saveGame();
       }
     }, 1000);
+
+    setInterval(() => {
+      if (farmerCount > 0) {
+        const multiplier = hasPesticide ? 2 : 1;
+        mames += (farmerCount * 10 * multiplier);
+        updateDisplay();
+        saveGame();
+      }
+    }, 3000);
 
     loadGame();
     updateDisplay();
