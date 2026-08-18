@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>そらまめキングダム</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      padding-top: 30px;
+    }
+    .score-board {
+      font-size: 2rem;
+      margin: 15px 0;
+      font-weight: bold;
+    }
+    .mame-btn {
+      font-size: 5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .mame-btn:active {
+      transform: scale(0.9);
+    }
+    .shop-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .shop-btn {
+      font-size: 1rem;
+      padding: 10px 20px;
+      background-color: #81c784;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 280px;
+    }
+    .shop-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .system-btn {
+      margin-top: 30px;
+      font-size: 0.8rem;
+      padding: 5px 10px;
+      background-color: #e0e0e0;
+      color: #666;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🫛 そらまめキングダム 🫛</h1>
+  
+  <div class="score-board">
+    そらまめ: <span id="mame-count">0</span> 個
+  </div>
+
+  <!-- タップして収穫する巨大そらまめ -->
+  <button id="harvest-btn" class="mame-btn">🫛</button>
+
+  <div class="shop-container">
+    <!-- 自動収穫アップグレード -->
+    <button id="buy-auto-btn" class="shop-btn" disabled>
+      自動収穫機 (所持: <span id="auto-count">0</span>)<br>
+      コスト: <span id="auto-cost">10</span> そらまめ
+    </button>
+
+    <!-- リセットボタン -->
+    <button id="reset-btn" class="system-btn">データをリセットして最初から</button>
+  </div>
+
+  <script>
+    // 1. ゲームの状態（初期値）
+    let mames = 0;
+    let autoHarvesterCount = 0;
+    let autoHarvesterCost = 10;
+
+    // 2. HTML要素の取得
+    const mameCountEl = document.getElementById('mame-count');
+    const harvestBtn = document.getElementById('harvest-btn');
+    const buyAutoBtn = document.getElementById('buy-auto-btn');
+    const autoCostEl = document.getElementById('auto-cost');
+    const autoCountEl = document.getElementById('auto-count');
+    const resetBtn = document.getElementById('reset-btn');
+
+    // 3. セーブ機能 (localStorageへ保存)
+    function saveGame() {
+      const saveData = {
+        mames: mames,
+        autoHarvesterCount: autoHarvesterCount,
+        autoHarvesterCost: autoHarvesterCost
+      };
+      localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
+    }
+
+    // 4. ロード機能 (localStorageから読み込み)
+    function loadGame() {
+      const savedData = localStorage.getItem('soramame_kingdom_save');
+      if (savedData !== null) {
+        const data = JSON.parse(savedData);
+        mames = data.mames || 0;
+        autoHarvesterCount = data.autoHarvesterCount || 0;
+        autoHarvesterCost = data.autoHarvesterCost || 10;
+      }
+    }
+
+    // 画面表示の更新
+    function updateDisplay() {
+      mameCountEl.textContent = mames;
+      autoCostEl.textContent = autoHarvesterCost;
+      autoCountEl.textContent = autoHarvesterCount;
+      
+      buyAutoBtn.disabled = (mames < autoHarvesterCost);
+    }
+
+    // 5. 手動収穫
+    harvestBtn.addEventListener('click', () => {
+      mames += 1;
+      updateDisplay();
+      saveGame(); // タップするたびに自動保存
+    });
+
+    // 6. 自動収穫機の購入
+    buyAutoBtn.addEventListener('click', () => {
+      if (mames >= autoHarvesterCost) {
+        mames -= autoHarvesterCost;
+        autoHarvesterCount += 1;
+        autoHarvesterCost = Math.floor(autoHarvesterCost * 1.5);
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    // 7. データリセット
+    resetBtn.addEventListener('click', () => {
+      if (confirm('本当にデータを消去して最初からやり直しますか？')) {
+        localStorage.removeItem('soramame_kingdom_save');
+        mames = 0;
+        autoHarvesterCount = 0;
+        autoHarvesterCost = 10;
+        updateDisplay();
+      }
+    });
+
+    // 8. ゲームループ（1秒ごとの自動収穫 ＋ 定期保存）
+    setInterval(() => {
+      if (autoHarvesterCount > 0) {
+        mames += autoHarvesterCount;
+        updateDisplay();
+        saveGame();
+      }
+    }, 1000);
+
+    // 起動時にロードして画面更新
+    loadGame();
+    updateDisplay();
+  </script>
+</body>
+</html>
