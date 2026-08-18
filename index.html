@@ -10,7 +10,7 @@
       text-align: center;
       background-color: #e8f5e9;
       color: #2e7d32;
-      padding-top: 15px;
+      padding-top: 10px;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
@@ -19,27 +19,51 @@
       margin: 0;
       height: 100vh;
     }
+
+    /* 📊 ゲージ表示エリア */
+    .gauge-container {
+      width: 85%;
+      margin: 5px auto 10px auto;
+      background-color: #c8e6c9;
+      border-radius: 10px;
+      padding: 3px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .gauge-bar {
+      height: 16px;
+      width: 0%;
+      background: linear-gradient(90deg, #81c784, #4caf50);
+      border-radius: 8px;
+      transition: width 0.3s ease-out;
+    }
+    .gauge-text {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #1b5e20;
+      margin-top: 3px;
+    }
+
     .score-board {
-      font-size: 1.5rem;
-      margin: 5px 0;
+      font-size: 1.4rem;
+      margin: 2px 0;
       font-weight: bold;
     }
     .sub-score {
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: #d84315;
       margin-bottom: 5px;
     }
 
-    /* 🛰 ドローンが空を移動するエリア */
+    /* 🛰 ドローン空エリア */
     .sky-area {
       position: relative;
       width: 100%;
-      height: 40px;
+      height: 35px;
       overflow: hidden;
     }
     .drone-char {
       position: absolute;
-      font-size: 2.2rem;
+      font-size: 2rem;
       top: 0;
       animation: flyDrone 4s ease-in-out infinite alternate;
     }
@@ -54,12 +78,12 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 10px 0;
-      min-height: 110px;
+      margin: 5px 0;
+      min-height: 100px;
     }
 
     .mame-btn {
-      font-size: 5.5rem;
+      font-size: 5rem;
       background: none;
       border: none;
       cursor: pointer;
@@ -84,7 +108,7 @@
       z-index: 5;
     }
     .farmer-char {
-      font-size: 3rem;
+      font-size: 2.8rem;
       animation: walkIn 0.8s ease-out forwards;
     }
     @keyframes walkIn {
@@ -93,15 +117,15 @@
       100% { transform: scale(1) translateY(0); opacity: 1; }
     }
 
-    /* 🚜 トラクターの表示エリア */
+    /* 🚜 トラクター表示エリア */
     .tractor-area {
-      height: 45px;
+      height: 40px;
       display: flex;
       justify-content: center;
       gap: 10px;
     }
     .tractor-char {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       animation: driveIn 0.5s ease-out forwards;
     }
     @keyframes driveIn {
@@ -113,7 +137,7 @@
     .menu-open-btn {
       font-size: 1.1rem;
       font-weight: bold;
-      padding: 10px 25px;
+      padding: 8px 22px;
       background-color: #4caf50;
       color: white;
       border: none;
@@ -124,7 +148,7 @@
       touch-action: manipulation;
     }
 
-    /* 右下固定の「🚗 出荷」ボタン */
+    /* 右下固定「🚗 出荷」ボタン */
     .shipment-btn {
       position: fixed;
       bottom: 20px;
@@ -202,7 +226,7 @@
     }
 
     .system-btn {
-      margin-top: 15px;
+      margin-top: 10px;
       font-size: 0.8rem;
       padding: 5px 10px;
       background-color: #e0e0e0;
@@ -210,6 +234,38 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+    }
+
+    /* 🎉 クリアモーダル */
+    .clear-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      animation: fadeIn 0.5s ease-out;
+    }
+    .clear-title {
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #ffd700;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+      margin-bottom: 10px;
+    }
+    .clear-msg {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
     /* ポップアニメーション */
@@ -222,7 +278,6 @@
       animation: popUp 0.6s ease-out forwards;
       z-index: 100;
     }
-    /* ゴールド専用ポップ */
     .pop-gold {
       color: #ffb300;
       font-size: 2.2rem;
@@ -234,7 +289,7 @@
       100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
     }
 
-    /* 💣 爆弾落下演出 */
+    /* 💣 爆弾落下アニメーション */
     .falling-bomb {
       position: fixed;
       top: -60px;
@@ -251,6 +306,12 @@
   </style>
 </head>
 <body>
+
+  <!-- 📊 残りそらまめゲージ -->
+  <div class="gauge-container">
+    <div class="gauge-bar" id="gauge-bar"></div>
+    <div class="gauge-text" id="gauge-text">クリアまであと 100,000,000 個</div>
+  </div>
 
   <!-- ドローン空エリア -->
   <div class="sky-area" id="sky-area"></div>
@@ -275,11 +336,22 @@
     <button id="open-menu-btn" class="menu-open-btn">🛠 強化メニュー</button>
   </div>
 
-  <!-- 右下固定：出荷ボタン（購入後に表示） -->
+  <!-- 出荷ボタン -->
   <button id="shipment-btn" class="shipment-btn" style="display: none;">🚗 出荷 (1000🫛→1🪙)</button>
 
   <div>
     <button id="reset-btn" class="system-btn">データをリセットして最初から</button>
+  </div>
+
+  <!-- 🎉 クリアモーダル -->
+  <div id="clear-modal" class="clear-modal">
+    <div class="clear-title">🎉 GAME CLEAR!! 🎉</div>
+    <div class="clear-msg">
+      おめでとうございます！！<br>
+      そらまめを1億個達成しました！<br>
+      あなたは伝説のそらまめマスターです！🫛👑
+    </div>
+    <button id="continue-btn" class="menu-open-btn" style="background-color: #ff9800;">そのまま遊ぶ</button>
   </div>
 
   <!-- 強化メニュー モーダル -->
@@ -325,20 +397,20 @@
         <span id="shipment-license-status">コスト: 30000 そらまめ</span>
       </button>
 
-      <!-- 新アイテム 1: 爆弾💣 -->
+      <!-- 💣 爆弾💣 -->
       <button id="buy-bomb-btn" class="shop-btn" style="display: none;" disabled>
         爆弾 💣 (所持: <span id="bomb-count">0</span>)<br>
-        3秒ごとに1万🫛獲得！<br>
+        30秒ごとに1万🫛獲得！<br>
         コスト: 100 コイン
       </button>
 
-      <!-- 新アイテム 2: 計画を立てる🤔 -->
+      <!-- 🤔 計画を立てる🤔 -->
       <button id="buy-plan-btn" class="shop-btn" style="display: none;" disabled>
         計画を立てる 🤔 (収穫量20倍！)<br>
         <span id="plan-status">コスト: 500000 そらまめ</span>
       </button>
 
-      <!-- 新アイテム 3: 肥料🌱 -->
+      <!-- 🌱 肥料🌱 -->
       <button id="buy-fertilizer-btn" class="shop-btn" style="display: none;" disabled>
         肥料 🌱 (さらに収穫量20倍！)<br>
         <span id="fertilizer-status">コスト: 10000000 そらまめ</span>
@@ -355,6 +427,7 @@
   </div>
 
   <script>
+    const GOAL_MAMES = 100000000; // 1億個
     let mames = 0;
     let coins = 0;
     let golds = 0;
@@ -381,7 +454,6 @@
     let partTimerCount = 0;
     let partTimerCost = 10;
 
-    // 新アイテム状態
     let bombCount = 0;
     let bombCost = 100;
     let hasPlan = false;
@@ -390,15 +462,22 @@
     let fertilizerCost = 10000000;
     let bombIntervalStarted = false;
 
+    let isCleared = false;
+
     const mameCountEl = document.getElementById('mame-count');
     const coinCountEl = document.getElementById('coin-count');
     const goldCountEl = document.getElementById('gold-count');
+
+    const gaugeBar = document.getElementById('gauge-bar');
+    const gaugeText = document.getElementById('gauge-text');
 
     const harvestBtn = document.getElementById('harvest-btn');
     const openMenuBtn = document.getElementById('open-menu-btn');
     const closeMenuBtn = document.getElementById('close-menu-btn');
     const shopModal = document.getElementById('shop-modal');
     const shipmentBtn = document.getElementById('shipment-btn');
+    const clearModal = document.getElementById('clear-modal');
+    const continueBtn = document.getElementById('continue-btn');
 
     const buyAutoBtn = document.getElementById('buy-auto-btn');
     const autoCostEl = document.getElementById('auto-cost');
@@ -443,7 +522,7 @@
 
     const resetBtn = document.getElementById('reset-btn');
 
-    // ★ セーブ機能 (完全未変更)
+    // 🔒 セーブ機能（完全保持・クリア状況含む）
     function saveGame() {
       const saveData = {
         mames: mames,
@@ -461,12 +540,16 @@
         tractorCost: tractorCost,
         hasShipmentLicense: hasShipmentLicense,
         hasShippedOnce: hasShippedOnce,
-        partTimerCount: partTimerCount
+        partTimerCount: partTimerCount,
+        bombCount: bombCount,
+        hasPlan: hasPlan,
+        hasFertilizer: hasFertilizer,
+        isCleared: isCleared
       };
       localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
     }
 
-    // ★ ロード機能 (完全未変更)
+    // 🔒 ロード機能（完全保持）
     function loadGame() {
       const savedData = localStorage.getItem('soramame_kingdom_save');
       if (savedData !== null) {
@@ -487,6 +570,14 @@
         hasShipmentLicense = data.hasShipmentLicense || false;
         hasShippedOnce = data.hasShippedOnce || false;
         partTimerCount = data.partTimerCount || 0;
+        bombCount = data.bombCount || 0;
+        hasPlan = data.hasPlan || false;
+        hasFertilizer = data.hasFertilizer || false;
+        isCleared = data.isCleared || false;
+
+        if (bombCount > 0 && !bombIntervalStarted) {
+          startBombLoop();
+        }
       }
     }
 
@@ -522,12 +613,33 @@
       }
     }
 
-    function updateDisplay() {
-      mameCountEl.textContent = mames;
-      coinCountEl.textContent = coins;
-      goldCountEl.textContent = golds;
+    function checkClearCondition() {
+      if (mames >= GOAL_MAMES && !isCleared) {
+        isCleared = true;
+        clearModal.style.display = 'flex';
+        saveGame();
+      }
+    }
 
-      autoCostEl.textContent = autoHarvesterCost;
+    function updateDisplay() {
+      mameCountEl.textContent = mames.toLocaleString();
+      coinCountEl.textContent = coins.toLocaleString();
+      goldCountEl.textContent = golds.toLocaleString();
+
+      // 📊 ゲージ計算
+      const remaining = Math.max(0, GOAL_MAMES - mames);
+      const percent = Math.min(100, (mames / GOAL_MAMES) * 100);
+      gaugeBar.style.width = `${percent}%`;
+
+      if (remaining === 0) {
+        gaugeText.textContent = "🎉 目標達成！1億個獲得！！";
+      } else {
+        gaugeText.textContent = `クリアまであと ${remaining.toLocaleString()} 個`;
+      }
+
+      checkClearCondition();
+
+      autoCostEl.textContent = autoHarvesterCost.toLocaleString();
       autoCountEl.textContent = autoHarvesterCount;
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
 
@@ -545,14 +657,14 @@
       if (autoHarvesterCount >= 10 || farmerCount > 0) {
         buyFarmerBtn.style.display = "block";
         farmerCountEl.textContent = farmerCount;
-        farmerCostEl.textContent = farmerCost;
+        farmerCostEl.textContent = farmerCost.toLocaleString();
         buyFarmerBtn.disabled = (mames < farmerCost);
       } else { buyFarmerBtn.style.display = "none"; }
 
       if (farmerCount >= 3 || droneCount > 0) {
         buyDroneBtn.style.display = "block";
         droneCountEl.textContent = droneCount;
-        droneCostEl.textContent = droneCost;
+        droneCostEl.textContent = droneCost.toLocaleString();
         buyDroneBtn.disabled = (mames < droneCost);
       } else { buyDroneBtn.style.display = "none"; }
 
@@ -563,14 +675,14 @@
           efficiencyStatusEl.textContent = "購入済み (5倍適用中！)";
         } else {
           buyEfficiencyBtn.disabled = (mames < efficiencyCost);
-          efficiencyStatusEl.textContent = `コスト: ${efficiencyCost} そらまめ`;
+          efficiencyStatusEl.textContent = `コスト: ${efficiencyCost.toLocaleString()} そらまめ`;
         }
       } else { buyEfficiencyBtn.style.display = "none"; }
 
       if (droneCount >= 10 || tractorCount > 0) {
         buyTractorBtn.style.display = "block";
         tractorCountEl.textContent = tractorCount;
-        tractorCostEl.textContent = tractorCost;
+        tractorCostEl.textContent = tractorCost.toLocaleString();
         buyTractorBtn.disabled = (mames < tractorCost);
       } else { buyTractorBtn.style.display = "none"; }
 
@@ -582,19 +694,17 @@
           shipmentBtn.style.display = "block";
         } else {
           buyShipmentLicenseBtn.disabled = (mames < shipmentLicenseCost);
-          shipmentLicenseStatusEl.textContent = `コスト: ${shipmentLicenseCost} そらまめ`;
+          shipmentLicenseStatusEl.textContent = `コスト: ${shipmentLicenseCost.toLocaleString()} そらまめ`;
           shipmentBtn.style.display = "none";
         }
       } else { buyShipmentLicenseBtn.style.display = "none"; }
 
-      // 爆弾💣 表示・状態更新
       if (hasShipmentLicense || bombCount > 0) {
         buyBombBtn.style.display = "block";
         bombCountEl.textContent = bombCount;
         buyBombBtn.disabled = (coins < bombCost);
       } else { buyBombBtn.style.display = "none"; }
 
-      // 計画🤔 表示・状態更新
       if (bombCount > 0 || hasPlan) {
         buyPlanBtn.style.display = "block";
         if (hasPlan) {
@@ -602,11 +712,10 @@
           planStatusEl.textContent = "購入済み (20倍適用中！)";
         } else {
           buyPlanBtn.disabled = (mames < planCost);
-          planStatusEl.textContent = `コスト: ${planCost} そらまめ`;
+          planStatusEl.textContent = `コスト: ${planCost.toLocaleString()} そらまめ`;
         }
       } else { buyPlanBtn.style.display = "none"; }
 
-      // 肥料🌱 表示・状態更新
       if (hasPlan || hasFertilizer) {
         buyFertilizerBtn.style.display = "block";
         if (hasFertilizer) {
@@ -614,7 +723,7 @@
           fertilizerStatusEl.textContent = "購入済み (計400倍適用中！)";
         } else {
           buyFertilizerBtn.disabled = (mames < fertilizerCost);
-          fertilizerStatusEl.textContent = `コスト: ${fertilizerCost} そらまめ`;
+          fertilizerStatusEl.textContent = `コスト: ${fertilizerCost.toLocaleString()} そらまめ`;
         }
       } else { buyFertilizerBtn.style.display = "none"; }
 
@@ -665,7 +774,6 @@
       setTimeout(() => pop.remove(), 600);
     }
 
-    // 自動収穫時のゴールドドロップ判定処理
     function checkAutoGoldDrop() {
       if (Math.random() < 0.002) {
         golds += 1;
@@ -673,12 +781,10 @@
       }
     }
 
-    // そらまめタップ処理（0.2%の確率でゴールド獲得）
     function handleManualHarvest(e) {
       mames += (1 * getMultiplier());
-      createPopNumber(e, `+${1 * getMultiplier()}`);
+      createPopNumber(e, `+${(1 * getMultiplier()).toLocaleString()}`);
 
-      // 🟡 0.2% (1/500) の確率でゴールドドロップ！
       if (Math.random() < 0.002) {
         golds += 1;
         setTimeout(() => {
@@ -702,6 +808,7 @@
 
     openMenuBtn.addEventListener('click', () => { shopModal.style.display = 'flex'; });
     closeMenuBtn.addEventListener('click', () => { shopModal.style.display = 'none'; });
+    continueBtn.addEventListener('click', () => { clearModal.style.display = 'none'; });
 
     buyAutoBtn.addEventListener('click', () => {
       if (mames >= autoHarvesterCost) {
@@ -763,7 +870,6 @@
       }
     });
 
-    // 爆弾💣の購入
     buyBombBtn.addEventListener('click', () => {
       if (coins >= bombCost) {
         coins -= bombCost;
@@ -783,7 +889,7 @@
           triggerBombAnimation();
           updateDisplay(); saveGame();
         }
-      }, 30000); // 30秒ごと
+      }, 30000);
     }
 
     function triggerBombAnimation() {
@@ -792,11 +898,10 @@
       bomb.textContent = '💣';
       bomb.style.left = `${Math.random() * (window.innerWidth - 60)}px`;
       document.body.appendChild(bomb);
-      createPopNumber(null, `+${(10000 * bombCount).toLocaleString()}🫛 (爆弾爆発!)`);
+      createPopNumber(null, `+${(10000 * bombCount).toLocaleString()}🫛 (爆弾ドカン!)`);
       setTimeout(() => bomb.remove(), 1800);
     }
 
-    // 計画を立てる🤔 の購入
     buyPlanBtn.addEventListener('click', () => {
       if (!hasPlan && mames >= planCost) {
         mames -= planCost;
@@ -805,7 +910,6 @@
       }
     });
 
-    // 肥料🌱 の購入
     buyFertilizerBtn.addEventListener('click', () => {
       if (!hasFertilizer && mames >= fertilizerCost) {
         mames -= fertilizerCost;
@@ -845,11 +949,12 @@
         hasShipmentLicense = false; hasShippedOnce = false;
         partTimerCount = 0;
         bombCount = 0; hasPlan = false; hasFertilizer = false;
+        isCleared = false;
         updateDisplay();
       }
     });
 
-    // --- 自動収穫ループ（自動獲得時も確率でゴールドをドロップ） ---
+    // --- 自動収穫ループ ---
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         mames += (autoHarvesterCount * getMultiplier());
@@ -894,4 +999,3 @@
   </script>
 </body>
 </html>
-
