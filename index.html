@@ -222,6 +222,12 @@
       animation: popUp 0.6s ease-out forwards;
       z-index: 100;
     }
+    /* ゴールド専用ポップ */
+    .pop-gold {
+      color: #ffb300;
+      font-size: 2.2rem;
+    }
+
     @keyframes popUp {
       0% { opacity: 1; transform: translateY(0) scale(1); }
       50% { opacity: 0.9; transform: translateY(-40px) scale(1.3); }
@@ -288,26 +294,22 @@
         コスト: <span id="drone-cost">2000</span> そらまめ
       </button>
 
-      <!-- 1. 効率強化 🔧 -->
       <button id="buy-efficiency-btn" class="shop-btn" style="display: none;" disabled>
         効率強化 🔧 (全収穫5倍！)<br>
         <span id="efficiency-status">コスト: 10000 そらまめ</span>
       </button>
 
-      <!-- 2. トラクター 🚜 -->
       <button id="buy-tractor-btn" class="shop-btn" style="display: none;" disabled>
         トラクター 🚜 (所持: <span id="tractor-count">0</span>)<br>
         10秒ごとに100個収穫<br>
         コスト: <span id="tractor-cost">10000</span> そらまめ
       </button>
 
-      <!-- 3. 出荷 🚗 -->
       <button id="buy-shipment-license-btn" class="shop-btn" style="display: none;" disabled>
         出荷機能 🚗 (右下にボタン解放)<br>
         <span id="shipment-license-status">コスト: 30000 そらまめ</span>
       </button>
 
-      <!-- 4. バイト 🧑‍🌾 -->
       <button id="buy-parttimer-btn" class="shop-btn" style="display: none;" disabled>
         バイト 🧑‍🌾 (所持: <span id="parttimer-count">0</span>/10)<br>
         20秒ごとに1ゴールド獲得<br>
@@ -332,7 +334,6 @@
     let droneCount = 0;
     let droneCost = 2000;
 
-    // 新要素フラグ＆変数
     let hasEfficiency = false;
     let efficiencyCost = 10000;
 
@@ -341,7 +342,7 @@
 
     let hasShipmentLicense = false;
     let shipmentLicenseCost = 30000;
-    let hasShippedOnce = false; // 1回でも出荷したか
+    let hasShippedOnce = false;
 
     let partTimerCount = 0;
     let partTimerCost = 10;
@@ -373,7 +374,6 @@
     const droneCostEl = document.getElementById('drone-cost');
     const skyArea = document.getElementById('sky-area');
 
-    // 新要素エレメント
     const buyEfficiencyBtn = document.getElementById('buy-efficiency-btn');
     const efficiencyStatusEl = document.getElementById('efficiency-status');
 
@@ -473,12 +473,10 @@
       coinCountEl.textContent = coins;
       goldCountEl.textContent = golds;
 
-      // 自動収穫機
       autoCostEl.textContent = autoHarvesterCost;
       autoCountEl.textContent = autoHarvesterCount;
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
 
-      // 農薬
       if (autoHarvesterCount >= 1 || hasPesticide) {
         buyPesticideBtn.style.display = "block";
         if (hasPesticide) {
@@ -490,7 +488,6 @@
         }
       } else { buyPesticideBtn.style.display = "none"; }
 
-      // 農家の人
       if (autoHarvesterCount >= 10 || farmerCount > 0) {
         buyFarmerBtn.style.display = "block";
         farmerCountEl.textContent = farmerCount;
@@ -498,7 +495,6 @@
         buyFarmerBtn.disabled = (mames < farmerCost);
       } else { buyFarmerBtn.style.display = "none"; }
 
-      // ドローン
       if (farmerCount >= 3 || droneCount > 0) {
         buyDroneBtn.style.display = "block";
         droneCountEl.textContent = droneCount;
@@ -506,7 +502,6 @@
         buyDroneBtn.disabled = (mames < droneCost);
       } else { buyDroneBtn.style.display = "none"; }
 
-      // 1. 効率強化 🔧 (ドローン3個で解放)
       if (droneCount >= 3 || hasEfficiency) {
         buyEfficiencyBtn.style.display = "block";
         if (hasEfficiency) {
@@ -518,7 +513,6 @@
         }
       } else { buyEfficiencyBtn.style.display = "none"; }
 
-      // 2. トラクター 🚜 (ドローン10個で解放)
       if (droneCount >= 10 || tractorCount > 0) {
         buyTractorBtn.style.display = "block";
         tractorCountEl.textContent = tractorCount;
@@ -526,7 +520,6 @@
         buyTractorBtn.disabled = (mames < tractorCost);
       } else { buyTractorBtn.style.display = "none"; }
 
-      // 3. 出荷 🚗 (トラクター3個で解放)
       if (tractorCount >= 3 || hasShipmentLicense) {
         buyShipmentLicenseBtn.style.display = "block";
         if (hasShipmentLicense) {
@@ -540,7 +533,6 @@
         }
       } else { buyShipmentLicenseBtn.style.display = "none"; }
 
-      // 4. バイト 🧑‍🌾 (出荷を1回行うと解放)
       if (hasShippedOnce || partTimerCount > 0) {
         buyPartTimerBtn.style.display = "block";
         parttimerCountEl.textContent = partTimerCount;
@@ -553,7 +545,6 @@
       renderTractors();
     }
 
-    // 倍率計算（農薬2倍 × 効率化5倍）
     function getMultiplier() {
       let m = 1;
       if (hasPesticide) m *= 2;
@@ -568,9 +559,9 @@
       lastTouchEnd = now;
     }, false);
 
-    function createPopNumber(e, text = '+1') {
+    function createPopNumber(e, text = '+1', isGold = false) {
       const pop = document.createElement('div');
-      pop.className = 'pop-number';
+      pop.className = isGold ? 'pop-number pop-gold' : 'pop-number';
       pop.textContent = text;
       let x, y;
       if (e && e.touches && e.touches.length > 0) {
@@ -587,27 +578,36 @@
       setTimeout(() => pop.remove(), 600);
     }
 
-    // そらまめ手動タップ
-    harvestBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
+    // そらまめタップ処理（0.2%の確率でゴールド獲得）
+    function handleManualHarvest(e) {
       mames += (1 * getMultiplier());
+      createPopNumber(e, `+${1 * getMultiplier()}`);
+
+      // 🟡 0.2% (1/500) の確率でゴールドドロップ！
+      if (Math.random() < 0.002) {
+        golds += 1;
+        setTimeout(() => {
+          createPopNumber(e, '+1🟡 レア！', true);
+        }, 150);
+      }
+
       updateDisplay();
       saveGame();
-      createPopNumber(e, `+${1 * getMultiplier()}`);
+    }
+
+    harvestBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      handleManualHarvest(e);
     });
     harvestBtn.addEventListener('mousedown', (e) => {
       if (!('ontouchstart' in window)) {
-        mames += (1 * getMultiplier());
-        updateDisplay();
-        saveGame();
-        createPopNumber(e, `+${1 * getMultiplier()}`);
+        handleManualHarvest(e);
       }
     });
 
     openMenuBtn.addEventListener('click', () => { shopModal.style.display = 'flex'; });
     closeMenuBtn.addEventListener('click', () => { shopModal.style.display = 'none'; });
 
-    // 施設購入処理
     buyAutoBtn.addEventListener('click', () => {
       if (mames >= autoHarvesterCost) {
         mames -= autoHarvesterCost;
@@ -676,12 +676,11 @@
       }
     });
 
-    // 右下「出荷」ボタン押下時
     shipmentBtn.addEventListener('click', (e) => {
       if (mames >= 1000) {
         mames -= 1000;
         coins += 1;
-        hasShippedOnce = true; // 初回出荷達成！
+        hasShippedOnce = true;
         updateDisplay(); saveGame();
         createPopNumber(e, '+1🪙');
       } else {
@@ -703,8 +702,6 @@
       }
     });
 
-    // --- 自動収穫ループ ---
-    // 1秒ごと：自動収穫機
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         mames += (autoHarvesterCount * getMultiplier());
@@ -712,7 +709,6 @@
       }
     }, 1000);
 
-    // 3秒ごと：農家の人
     setInterval(() => {
       if (farmerCount > 0) {
         mames += (farmerCount * 10 * getMultiplier());
@@ -720,7 +716,6 @@
       }
     }, 3000);
 
-    // 0.5秒ごと：ドローン 🛰
     setInterval(() => {
       if (droneCount > 0) {
         mames += (droneCount * 3 * getMultiplier());
@@ -728,7 +723,6 @@
       }
     }, 500);
 
-    // 10秒ごと：トラクター 🚜
     setInterval(() => {
       if (tractorCount > 0) {
         mames += (tractorCount * 100 * getMultiplier());
@@ -736,7 +730,6 @@
       }
     }, 10000);
 
-    // 20秒ごと：バイト 🧑‍🌾 (※倍率効果を受けない独立通貨ゴールドを獲得)
     setInterval(() => {
       if (partTimerCount > 0) {
         golds += (partTimerCount * 1);
