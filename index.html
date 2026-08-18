@@ -10,20 +10,30 @@
       text-align: center;
       background-color: #e8f5e9;
       color: #2e7d32;
-      padding-top: 30px;
+      padding-top: 20px;
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
       overflow: hidden;
       position: relative;
-      height: 100vh;
       margin: 0;
     }
     .score-board {
       font-size: 2rem;
-      margin: 15px 0;
+      margin: 10px 0;
       font-weight: bold;
     }
+
+    /* そらまめと農家の人たちの表示エリア */
+    .game-stage {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+      min-height: 120px;
+    }
+
     .mame-btn {
       font-size: 6rem;
       background: none;
@@ -33,33 +43,39 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       outline: none;
-      margin: 20px 0;
+      z-index: 10;
     }
     .mame-btn:active {
       transform: scale(0.8);
     }
 
     /* 🌾 接近してくる農家の人アニメーション 🌾 */
-    .farmer-char {
+    .farmer-container {
       position: absolute;
-      font-size: 3rem;
-      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
       pointer-events: none;
-      animation: walkIn 1.5s ease-out forwards;
-      z-index: 50;
+      z-index: 5;
+    }
+
+    .farmer-char {
+      font-size: 3.5rem;
+      animation: walkIn 0.8s ease-out forwards;
     }
 
     @keyframes walkIn {
       0% {
-        transform: translateY(100px) scale(0.2);
+        transform: scale(0) translateY(50px);
         opacity: 0;
       }
-      50% {
-        transform: translateY(-10px) scale(1.1);
+      70% {
+        transform: scale(1.3) translateY(-10px);
         opacity: 1;
       }
       100% {
-        transform: translateY(0) scale(1);
+        transform: scale(1) translateY(0);
         opacity: 1;
       }
     }
@@ -173,7 +189,11 @@
     そらまめ: <span id="mame-count">0</span> 個
   </div>
 
-  <button id="harvest-btn" class="mame-btn">🫛</button>
+  <!-- そらまめと農家の人たちのステージ -->
+  <div class="game-stage">
+    <div id="farmer-field" class="farmer-container"></div>
+    <button id="harvest-btn" class="mame-btn">🫛</button>
+  </div>
 
   <div>
     <button id="open-menu-btn" class="menu-open-btn">🛠 強化メニュー</button>
@@ -182,9 +202,6 @@
   <div>
     <button id="reset-btn" class="system-btn">データをリセットして最初から</button>
   </div>
-
-  <!-- 農家の人たちが並ぶエリア -->
-  <div id="farmer-field"></div>
 
   <!-- 強化メニュー モーダル -->
   <div id="shop-modal" class="modal-overlay">
@@ -265,20 +282,14 @@
       }
     }
 
-    // 🌾 農家の人を表示する関数
+    // 🌾 農家の人を表示する関数（まめの左右にどーーんと出現！）
     function renderFarmers() {
       farmerField.innerHTML = '';
-      // 最大8人まで画面下にズラッと並べる
-      const displayCount = Math.min(farmerCount, 8);
+      const displayCount = Math.min(farmerCount, 4); // 左右に2人ずつまで配置
       for (let i = 0; i < displayCount; i++) {
         const farmer = document.createElement('div');
         farmer.className = 'farmer-char';
         farmer.textContent = '👨‍🌾';
-        
-        // 画面の幅に合わせて分散配置
-        const leftPercent = 10 + (i * 11);
-        farmer.style.left = `${leftPercent}%`;
-        
         farmerField.appendChild(farmer);
       }
     }
