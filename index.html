@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>そらまめキングダム</title>
+  <title>KINGTHESORAMAME</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,6 +11,10 @@
       background-color: #e8f5e9;
       color: #2e7d32;
       padding-top: 30px;
+      /* スマホでのダブルタップズーム・長押し選択を防止 */
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
     }
     .score-board {
       font-size: 2rem;
@@ -23,6 +27,9 @@
       border: none;
       cursor: pointer;
       transition: transform 0.1s;
+      /* タップ時の青い枠やハイライトを消す */
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
     }
     .mame-btn:active {
       transform: scale(0.9);
@@ -43,6 +50,7 @@
       border-radius: 8px;
       cursor: pointer;
       width: 280px;
+      -webkit-tap-highlight-color: transparent;
     }
     .shop-btn:disabled {
       background-color: #ccc;
@@ -57,12 +65,13 @@
       border: none;
       border-radius: 4px;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
   </style>
 </head>
 <body>
 
-  <h1>🫛 そらまめキングダム 🫛</h1>
+  <h1>🫛 KINGTHESORAMAME 🫛</h1>
   
   <div class="score-board">
     そらまめ: <span id="mame-count">0</span> 個
@@ -122,7 +131,6 @@
       mameCountEl.textContent = mames;
       autoCostEl.textContent = autoHarvesterCost;
       autoCountEl.textContent = autoHarvesterCount;
-      
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
     }
 
@@ -130,7 +138,7 @@
     harvestBtn.addEventListener('click', () => {
       mames += 1;
       updateDisplay();
-      saveGame(); // タップするたびに自動保存
+      saveGame();
     });
 
     // 6. 自動収穫機の購入
@@ -155,7 +163,7 @@
       }
     });
 
-    // 8. ゲームループ（1秒ごとの自動収穫 ＋ 定期保存）
+    // 8. ゲームループ（1秒ごとの自動収穫）
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         mames += autoHarvesterCount;
