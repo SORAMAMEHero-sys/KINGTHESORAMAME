@@ -233,6 +233,21 @@
       50% { opacity: 0.9; transform: translateY(-40px) scale(1.3); }
       100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
     }
+
+    /* 💣 爆弾落下演出 */
+    .falling-bomb {
+      position: fixed;
+      top: -60px;
+      font-size: 3rem;
+      z-index: 999;
+      pointer-events: none;
+      animation: bombFall 1.8s ease-in forwards;
+    }
+    @keyframes bombFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -310,6 +325,25 @@
         <span id="shipment-license-status">コスト: 30000 そらまめ</span>
       </button>
 
+      <!-- 新アイテム 1: 爆弾💣 -->
+      <button id="buy-bomb-btn" class="shop-btn" style="display: none;" disabled>
+        爆弾 💣 (所持: <span id="bomb-count">0</span>)<br>
+        3秒ごとに1万🫛獲得！<br>
+        コスト: 100 コイン
+      </button>
+
+      <!-- 新アイテム 2: 計画を立てる🤔 -->
+      <button id="buy-plan-btn" class="shop-btn" style="display: none;" disabled>
+        計画を立てる 🤔 (収穫量20倍！)<br>
+        <span id="plan-status">コスト: 500000 そらまめ</span>
+      </button>
+
+      <!-- 新アイテム 3: 肥料🌱 -->
+      <button id="buy-fertilizer-btn" class="shop-btn" style="display: none;" disabled>
+        肥料 🌱 (さらに収穫量20倍！)<br>
+        <span id="fertilizer-status">コスト: 10000000 そらまめ</span>
+      </button>
+
       <button id="buy-parttimer-btn" class="shop-btn" style="display: none;" disabled>
         バイト 🧑‍🌾 (所持: <span id="parttimer-count">0</span>/10)<br>
         20秒ごとに1ゴールド獲得<br>
@@ -346,6 +380,15 @@
 
     let partTimerCount = 0;
     let partTimerCost = 10;
+
+    // 新アイテム状態
+    let bombCount = 0;
+    let bombCost = 100;
+    let hasPlan = false;
+    let planCost = 500000;
+    let hasFertilizer = false;
+    let fertilizerCost = 10000000;
+    let bombIntervalStarted = false;
 
     const mameCountEl = document.getElementById('mame-count');
     const coinCountEl = document.getElementById('coin-count');
@@ -385,12 +428,22 @@
     const buyShipmentLicenseBtn = document.getElementById('buy-shipment-license-btn');
     const shipmentLicenseStatusEl = document.getElementById('shipment-license-status');
 
+    const buyBombBtn = document.getElementById('buy-bomb-btn');
+    const bombCountEl = document.getElementById('bomb-count');
+
+    const buyPlanBtn = document.getElementById('buy-plan-btn');
+    const planStatusEl = document.getElementById('plan-status');
+
+    const buyFertilizerBtn = document.getElementById('buy-fertilizer-btn');
+    const fertilizerStatusEl = document.getElementById('fertilizer-status');
+
     const buyPartTimerBtn = document.getElementById('buy-parttimer-btn');
     const parttimerCountEl = document.getElementById('parttimer-count');
     const parttimerCostEl = document.getElementById('parttimer-cost');
 
     const resetBtn = document.getElementById('reset-btn');
 
+    // ★ セーブ機能 (完全未変更)
     function saveGame() {
       const saveData = {
         mames: mames,
@@ -413,6 +466,7 @@
       localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
     }
 
+    // ★ ロード機能 (完全未変更)
     function loadGame() {
       const savedData = localStorage.getItem('soramame_kingdom_save');
       if (savedData !== null) {
@@ -533,6 +587,37 @@
         }
       } else { buyShipmentLicenseBtn.style.display = "none"; }
 
+      // 爆弾💣 表示・状態更新
+      if (hasShipmentLicense || bombCount > 0) {
+        buyBombBtn.style.display = "block";
+        bombCountEl.textContent = bombCount;
+        buyBombBtn.disabled = (coins < bombCost);
+      } else { buyBombBtn.style.display = "none"; }
+
+      // 計画🤔 表示・状態更新
+      if (bombCount > 0 || hasPlan) {
+        buyPlanBtn.style.display = "block";
+        if (hasPlan) {
+          buyPlanBtn.disabled = true;
+          planStatusEl.textContent = "購入済み (20倍適用中！)";
+        } else {
+          buyPlanBtn.disabled = (mames < planCost);
+          planStatusEl.textContent = `コスト: ${planCost} そらまめ`;
+        }
+      } else { buyPlanBtn.style.display = "none"; }
+
+      // 肥料🌱 表示・状態更新
+      if (hasPlan || hasFertilizer) {
+        buyFertilizerBtn.style.display = "block";
+        if (hasFertilizer) {
+          buyFertilizerBtn.disabled = true;
+          fertilizerStatusEl.textContent = "購入済み (計400倍適用中！)";
+        } else {
+          buyFertilizerBtn.disabled = (mames < fertilizerCost);
+          fertilizerStatusEl.textContent = `コスト: ${fertilizerCost} そらまめ`;
+        }
+      } else { buyFertilizerBtn.style.display = "none"; }
+
       if (hasShippedOnce || partTimerCount > 0) {
         buyPartTimerBtn.style.display = "block";
         parttimerCountEl.textContent = partTimerCount;
@@ -549,6 +634,8 @@
       let m = 1;
       if (hasPesticide) m *= 2;
       if (hasEfficiency) m *= 5;
+      if (hasPlan) m *= 20;
+      if (hasFertilizer) m *= 20;
       return m;
     }
 
@@ -576,6 +663,14 @@
       pop.style.top = `${y - 30}px`;
       document.body.appendChild(pop);
       setTimeout(() => pop.remove(), 600);
+    }
+
+    // 自動収穫時のゴールドドロップ判定処理
+    function checkAutoGoldDrop() {
+      if (Math.random() < 0.002) {
+        golds += 1;
+        createPopNumber(null, '+1🟡 レア！', true);
+      }
     }
 
     // そらまめタップ処理（0.2%の確率でゴールド獲得）
@@ -668,6 +763,57 @@
       }
     });
 
+    // 爆弾💣の購入
+    buyBombBtn.addEventListener('click', () => {
+      if (coins >= bombCost) {
+        coins -= bombCost;
+        bombCount += 1;
+        if (!bombIntervalStarted) {
+          startBombLoop();
+        }
+        updateDisplay(); saveGame();
+      }
+    });
+
+    function startBombLoop() {
+      bombIntervalStarted = true;
+      setInterval(() => {
+        if (bombCount > 0) {
+          mames += (10000 * bombCount);
+          triggerBombAnimation();
+          updateDisplay(); saveGame();
+        }
+      }, 30000); // 30秒ごと
+    }
+
+    function triggerBombAnimation() {
+      const bomb = document.createElement('div');
+      bomb.className = 'falling-bomb';
+      bomb.textContent = '💣';
+      bomb.style.left = `${Math.random() * (window.innerWidth - 60)}px`;
+      document.body.appendChild(bomb);
+      createPopNumber(null, `+${(10000 * bombCount).toLocaleString()}🫛 (爆弾爆発!)`);
+      setTimeout(() => bomb.remove(), 1800);
+    }
+
+    // 計画を立てる🤔 の購入
+    buyPlanBtn.addEventListener('click', () => {
+      if (!hasPlan && mames >= planCost) {
+        mames -= planCost;
+        hasPlan = true;
+        updateDisplay(); saveGame();
+      }
+    });
+
+    // 肥料🌱 の購入
+    buyFertilizerBtn.addEventListener('click', () => {
+      if (!hasFertilizer && mames >= fertilizerCost) {
+        mames -= fertilizerCost;
+        hasFertilizer = true;
+        updateDisplay(); saveGame();
+      }
+    });
+
     buyPartTimerBtn.addEventListener('click', () => {
       if (golds >= partTimerCost && partTimerCount < 10) {
         golds -= partTimerCost;
@@ -698,13 +844,16 @@
         hasEfficiency = false; tractorCount = 0; tractorCost = 10000;
         hasShipmentLicense = false; hasShippedOnce = false;
         partTimerCount = 0;
+        bombCount = 0; hasPlan = false; hasFertilizer = false;
         updateDisplay();
       }
     });
 
+    // --- 自動収穫ループ（自動獲得時も確率でゴールドをドロップ） ---
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         mames += (autoHarvesterCount * getMultiplier());
+        for (let i = 0; i < autoHarvesterCount; i++) checkAutoGoldDrop();
         updateDisplay(); saveGame();
       }
     }, 1000);
@@ -712,6 +861,7 @@
     setInterval(() => {
       if (farmerCount > 0) {
         mames += (farmerCount * 10 * getMultiplier());
+        for (let i = 0; i < farmerCount; i++) checkAutoGoldDrop();
         updateDisplay(); saveGame();
       }
     }, 3000);
@@ -719,6 +869,7 @@
     setInterval(() => {
       if (droneCount > 0) {
         mames += (droneCount * 3 * getMultiplier());
+        for (let i = 0; i < droneCount; i++) checkAutoGoldDrop();
         updateDisplay(); saveGame();
       }
     }, 500);
@@ -726,6 +877,7 @@
     setInterval(() => {
       if (tractorCount > 0) {
         mames += (tractorCount * 100 * getMultiplier());
+        for (let i = 0; i < tractorCount; i++) checkAutoGoldDrop();
         updateDisplay(); saveGame();
       }
     }, 10000);
