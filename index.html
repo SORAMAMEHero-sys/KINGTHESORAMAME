@@ -17,11 +17,30 @@
       overflow: hidden;
       position: relative;
       margin: 0;
+      height: 100vh;
     }
     .score-board {
       font-size: 2rem;
       margin: 10px 0;
       font-weight: bold;
+    }
+
+    /* 🛰 ドローンが空を移動するエリア 🛰 */
+    .sky-area {
+      position: relative;
+      width: 100%;
+      height: 50px;
+      overflow: hidden;
+    }
+    .drone-char {
+      position: absolute;
+      font-size: 2.5rem;
+      top: 0;
+      animation: flyDrone 4s ease-in-out infinite alternate;
+    }
+    @keyframes flyDrone {
+      0% { left: 5%; transform: scaleX(1); }
+      100% { left: 80%; transform: scaleX(-1); }
     }
 
     /* そらまめと農家の人たちの表示エリア */
@@ -30,7 +49,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 20px 0;
+      margin: 10px 0;
       min-height: 120px;
     }
 
@@ -185,6 +204,9 @@
 </head>
 <body>
 
+  <!-- ドローンが飛ぶ空エリア -->
+  <div class="sky-area" id="sky-area"></div>
+
   <div class="score-board">
     そらまめ: <span id="mame-count">0</span> 個
   </div>
@@ -224,6 +246,13 @@
         コスト: <span id="farmer-cost">500</span> そらまめ
       </button>
 
+      <!-- 新要素：ドローン -->
+      <button id="buy-drone-btn" class="shop-btn" style="display: none;" disabled>
+        ドローン 🛰 (所持: <span id="drone-count">0</span>)<br>
+        0.5秒ごとに3個収穫<br>
+        コスト: <span id="drone-cost">2000</span> そらまめ
+      </button>
+
       <button id="close-menu-btn" class="close-btn">閉じる</button>
     </div>
   </div>
@@ -236,6 +265,10 @@
     let pesticideCost = 50;
     let farmerCount = 0;
     let farmerCost = 500;
+    
+    // 新要素：ドローン
+    let droneCount = 0;
+    let droneCost = 2000;
 
     const mameCountEl = document.getElementById('mame-count');
     const harvestBtn = document.getElementById('harvest-btn');
@@ -255,6 +288,11 @@
     const farmerCostEl = document.getElementById('farmer-cost');
     const farmerField = document.getElementById('farmer-field');
 
+    const buyDroneBtn = document.getElementById('buy-drone-btn');
+    const droneCountEl = document.getElementById('drone-count');
+    const droneCostEl = document.getElementById('drone-cost');
+    const skyArea = document.getElementById('sky-area');
+
     const resetBtn = document.getElementById('reset-btn');
 
     function saveGame() {
@@ -264,7 +302,9 @@
         autoHarvesterCost: autoHarvesterCost,
         hasPesticide: hasPesticide,
         farmerCount: farmerCount,
-        farmerCost: farmerCost
+        farmerCost: farmerCost,
+        droneCount: droneCount,
+        droneCost: droneCost
       };
       localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
     }
@@ -279,18 +319,31 @@
         hasPesticide = data.hasPesticide || false;
         farmerCount = data.farmerCount || 0;
         farmerCost = data.farmerCost || 500;
+        droneCount = data.droneCount || 0;
+        droneCost = data.droneCost || 2000;
       }
     }
 
-    // 🌾 農家の人を表示する関数（まめの左右にどーーんと出現！）
+    // 🌾 農家の人を表示する関数
     function renderFarmers() {
       farmerField.innerHTML = '';
-      const displayCount = Math.min(farmerCount, 4); // 左右に2人ずつまで配置
+      const displayCount = Math.min(farmerCount, 4);
       for (let i = 0; i < displayCount; i++) {
         const farmer = document.createElement('div');
         farmer.className = 'farmer-char';
         farmer.textContent = '👨‍🌾';
         farmerField.appendChild(farmer);
+      }
+    }
+
+    // 🛰 ドローンを空に表示する関数
+    function renderDrones() {
+      skyArea.innerHTML = '';
+      if (droneCount > 0) {
+        const drone = document.createElement('div');
+        drone.className = 'drone-char';
+        drone.textContent = '🛰';
+        skyArea.appendChild(drone);
       }
     }
 
@@ -322,7 +375,18 @@
         buyFarmerBtn.style.display = "none";
       }
 
+      // ドローン（農家の人3人以上で解放）
+      if (farmerCount >= 3 || droneCount > 0) {
+        buyDroneBtn.style.display = "block";
+        droneCountEl.textContent = droneCount;
+        droneCostEl.textContent = droneCost;
+        buyDroneBtn.disabled = (mames < droneCost);
+      } else {
+        buyDroneBtn.style.display = "none";
+      }
+
       renderFarmers();
+      renderDrones();
     }
 
     let lastTouchEnd = 0;
@@ -404,6 +468,16 @@
       }
     });
 
+    buyDroneBtn.addEventListener('click', () => {
+      if (mames >= droneCost) {
+        mames -= droneCost;
+        droneCount += 1;
+        droneCost = Math.floor(droneCost * 1.5);
+        updateDisplay();
+        saveGame();
+      }
+    });
+
     resetBtn.addEventListener('click', () => {
       if (confirm('本当にリセットしますか？')) {
         localStorage.removeItem('soramame_kingdom_save');
@@ -413,10 +487,13 @@
         hasPesticide = false;
         farmerCount = 0;
         farmerCost = 500;
+        droneCount = 0;
+        droneCost = 2000;
         updateDisplay();
       }
     });
 
+    // 1秒ごと：自動収穫機
     setInterval(() => {
       if (autoHarvesterCount > 0) {
         const multiplier = hasPesticide ? 2 : 1;
@@ -426,6 +503,7 @@
       }
     }, 1000);
 
+    // 3秒ごと：農家の人
     setInterval(() => {
       if (farmerCount > 0) {
         const multiplier = hasPesticide ? 2 : 1;
@@ -434,6 +512,16 @@
         saveGame();
       }
     }, 3000);
+
+    // 0.5秒ごと：ドローン 🛰（爆速自動収穫！）
+    setInterval(() => {
+      if (droneCount > 0) {
+        const multiplier = hasPesticide ? 2 : 1;
+        mames += (droneCount * 3 * multiplier);
+        updateDisplay();
+        saveGame();
+      }
+    }, 500);
 
     loadGame();
     updateDisplay();
