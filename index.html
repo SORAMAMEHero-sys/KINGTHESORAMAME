@@ -11,10 +11,11 @@
       background-color: #e8f5e9;
       color: #2e7d32;
       padding-top: 30px;
-      /* スマホでのダブルタップズーム・長押し選択を防止 */
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
+      overflow: hidden;
+      position: relative;
     }
     .score-board {
       font-size: 2rem;
@@ -22,35 +23,74 @@
       font-weight: bold;
     }
     .mame-btn {
-      font-size: 5rem;
+      font-size: 6rem;
       background: none;
       border: none;
       cursor: pointer;
-      transition: transform 0.1s;
-      /* タップ時の青い枠やハイライト、ズームを防止 */
+      transition: transform 0.03s;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       outline: none;
+      margin: 20px 0;
     }
     .mame-btn:active {
-      transform: scale(0.9);
+      transform: scale(0.8);
     }
-    .shop-container {
-      margin-top: 20px;
+
+    /* 強化メニューを開くボタン */
+    .menu-open-btn {
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: 12px 30px;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    /* 強化メニュー（モーダル背景） */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+    }
+    /* モーダル本体 */
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      width: 85%;
+      max-width: 320px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      gap: 12px;
+    }
+    .modal-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #2e7d32;
+      margin-bottom: 5px;
     }
     .shop-btn {
-      font-size: 1rem;
-      padding: 10px 20px;
+      font-size: 0.95rem;
+      padding: 10px;
       background-color: #81c784;
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      width: 280px;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
@@ -58,6 +98,16 @@
       background-color: #ccc;
       cursor: not-allowed;
     }
+    .close-btn {
+      background-color: #888;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
     .system-btn {
       margin-top: 30px;
       font-size: 0.8rem;
@@ -70,6 +120,22 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
+
+    /* ポップアニメーション */
+    .pop-number {
+      position: absolute;
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #2e7d32;
+      pointer-events: none;
+      animation: popUp 0.6s ease-out forwards;
+      z-index: 100;
+    }
+    @keyframes popUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      50% { opacity: 0.9; transform: translateY(-40px) scale(1.3); }
+      100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
+    }
   </style>
 </head>
 <body>
@@ -78,45 +144,68 @@
     そらまめ: <span id="mame-count">0</span> 個
   </div>
 
-  <!-- タップして収穫する巨大そらまめ -->
   <button id="harvest-btn" class="mame-btn">🫛</button>
 
-  <div class="shop-container">
-    <!-- 自動収穫アップグレード -->
-    <button id="buy-auto-btn" class="shop-btn" disabled>
-      自動収穫機 (所持: <span id="auto-count">0</span>)<br>
-      コスト: <span id="auto-cost">10</span> そらまめ
-    </button>
+  <div>
+    <button id="open-menu-btn" class="menu-open-btn">🛠 強化メニュー</button>
+  </div>
 
-    <!-- リセットボタン -->
+  <div>
     <button id="reset-btn" class="system-btn">データをリセットして最初から</button>
   </div>
 
+  <!-- 強化メニュー モーダル -->
+  <div id="shop-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-title">🛠 強化メニュー</div>
+      
+      <!-- 1. 自動収穫機 -->
+      <button id="buy-auto-btn" class="shop-btn" disabled>
+        自動収穫機 (所持: <span id="auto-count">0</span>)<br>
+        コスト: <span id="auto-cost">10</span> そらまめ
+      </button>
+
+      <!-- 2. 農薬撒き機（自動収穫機1つ以上で表示） -->
+      <button id="buy-pesticide-btn" class="shop-btn" style="display: none;" disabled>
+        農薬撒き機 🧪 (収穫2倍)<br>
+        <span id="pesticide-status">コスト: 50 そらまめ</span>
+      </button>
+
+      <button id="close-menu-btn" class="close-btn">閉じる</button>
+    </div>
+  </div>
+
   <script>
-    // 1. ゲームの状態（初期値）
     let mames = 0;
     let autoHarvesterCount = 0;
     let autoHarvesterCost = 10;
+    let hasPesticide = false;
+    let pesticideCost = 50;
 
-    // 2. HTML要素の取得
     const mameCountEl = document.getElementById('mame-count');
     const harvestBtn = document.getElementById('harvest-btn');
+    const openMenuBtn = document.getElementById('open-menu-btn');
+    const closeMenuBtn = document.getElementById('close-menu-btn');
+    const shopModal = document.getElementById('shop-modal');
+    
     const buyAutoBtn = document.getElementById('buy-auto-btn');
     const autoCostEl = document.getElementById('auto-cost');
     const autoCountEl = document.getElementById('auto-count');
+    
+    const buyPesticideBtn = document.getElementById('buy-pesticide-btn');
+    const pesticideStatusEl = document.getElementById('pesticide-status');
     const resetBtn = document.getElementById('reset-btn');
 
-    // 3. セーブ機能 (localStorageへ保存)
     function saveGame() {
       const saveData = {
         mames: mames,
         autoHarvesterCount: autoHarvesterCount,
-        autoHarvesterCost: autoHarvesterCost
+        autoHarvesterCost: autoHarvesterCost,
+        hasPesticide: hasPesticide
       };
       localStorage.setItem('soramame_kingdom_save', JSON.stringify(saveData));
     }
 
-    // 4. ロード機能 (localStorageから読み込み)
     function loadGame() {
       const savedData = localStorage.getItem('soramame_kingdom_save');
       if (savedData !== null) {
@@ -124,18 +213,32 @@
         mames = data.mames || 0;
         autoHarvesterCount = data.autoHarvesterCount || 0;
         autoHarvesterCost = data.autoHarvesterCost || 10;
+        hasPesticide = data.hasPesticide || false;
       }
     }
 
-    // 画面表示の更新
     function updateDisplay() {
       mameCountEl.textContent = mames;
       autoCostEl.textContent = autoHarvesterCost;
       autoCountEl.textContent = autoHarvesterCount;
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
+
+      // 自動収穫機が1つ以上あれば「農薬撒き機」を表示
+      if (autoHarvesterCount >= 1) {
+        buyPesticideBtn.style.display = "block";
+        if (hasPesticide) {
+          buyPesticideBtn.disabled = true;
+          pesticideStatusEl.textContent = "購入済み (効果: 2倍適用中！)";
+        } else {
+          buyPesticideBtn.disabled = (mames < pesticideCost);
+          pesticideStatusEl.textContent = `コスト: ${pesticideCost} そらまめ`;
+        }
+      } else {
+        buyPesticideBtn.style.display = "none";
+      }
     }
 
-    // iOSのダブルタップズームをJavaScript側で強制防止
+    // iOSズーム防止
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (event) => {
       const now = (new Date()).getTime();
@@ -145,14 +248,51 @@
       lastTouchEnd = now;
     }, false);
 
-    // 5. 手動収穫
-    harvestBtn.addEventListener('click', () => {
+    function createPopNumber(e) {
+      const pop = document.createElement('div');
+      pop.className = 'pop-number';
+      pop.textContent = '+1';
+
+      let x, y;
+      if (e.touches && e.touches.length > 0) {
+        x = e.touches[0].clientX;
+        y = e.touches[0].clientY;
+      } else {
+        x = e.clientX;
+        y = e.clientY;
+      }
+
+      const randomOffsetX = (Math.random() - 0.5) * 30;
+      pop.style.left = `${x + randomOffsetX - 15}px`;
+      pop.style.top = `${y - 30}px`;
+
+      document.body.appendChild(pop);
+      setTimeout(() => pop.remove(), 600);
+    }
+
+    // 連打（touchstart）で即反応する爆速タップ処理！
+    harvestBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
       mames += 1;
       updateDisplay();
       saveGame();
+      createPopNumber(e);
+    });
+    harvestBtn.addEventListener('mousedown', (e) => {
+      // タッチ非対応（PC等）のためのフォールバック
+      if (!('ontouchstart' in window)) {
+        mames += 1;
+        updateDisplay();
+        saveGame();
+        createPopNumber(e);
+      }
     });
 
-    // 6. 自動収穫機の購入
+    // モーダル開閉
+    openMenuBtn.addEventListener('click', () => { shopModal.style.display = 'flex'; });
+    closeMenuBtn.addEventListener('click', () => { shopModal.style.display = 'none'; });
+
+    // 自動収穫機 購入
     buyAutoBtn.addEventListener('click', () => {
       if (mames >= autoHarvesterCost) {
         mames -= autoHarvesterCost;
@@ -163,27 +303,38 @@
       }
     });
 
-    // 7. データリセット
+    // 農薬撒き機 購入（収穫倍率2倍！）
+    buyPesticideBtn.addEventListener('click', () => {
+      if (!hasPesticide && mames >= pesticideCost) {
+        mames -= pesticideCost;
+        hasPesticide = true;
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    // データリセット
     resetBtn.addEventListener('click', () => {
-      if (confirm('本当にデータを消去して最初からやり直しますか？')) {
+      if (confirm('本当にリセットしますか？')) {
         localStorage.removeItem('soramame_kingdom_save');
         mames = 0;
         autoHarvesterCount = 0;
         autoHarvesterCost = 10;
+        hasPesticide = false;
         updateDisplay();
       }
     });
 
-    // 8. ゲームループ（1秒ごとの自動収穫）
+    // 自動収穫ループ（農薬撒き機があれば効率2倍！）
     setInterval(() => {
       if (autoHarvesterCount > 0) {
-        mames += autoHarvesterCount;
+        const multiplier = hasPesticide ? 2 : 1;
+        mames += (autoHarvesterCount * multiplier);
         updateDisplay();
         saveGame();
       }
     }, 1000);
 
-    // 起動時にロードして画面更新
     loadGame();
     updateDisplay();
   </script>
