@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KINGTHESORAMAME</title>
+  <title>そらまめゲーム</title>
   <style>
     body {
       font-family: sans-serif;
@@ -27,8 +27,9 @@
       border: none;
       cursor: pointer;
       transition: transform 0.1s;
-      /* タップ時の青い枠やハイライトを消す */
+      /* タップ時の青い枠やハイライト、ズームを防止 */
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
       outline: none;
     }
     .mame-btn:active {
@@ -51,6 +52,7 @@
       cursor: pointer;
       width: 280px;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
     .shop-btn:disabled {
       background-color: #ccc;
@@ -66,13 +68,12 @@
       border-radius: 4px;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
   </style>
 </head>
 <body>
 
-  <h1>🫛 KINGTHESORAMAME 🫛</h1>
-  
   <div class="score-board">
     そらまめ: <span id="mame-count">0</span> 個
   </div>
@@ -133,6 +134,16 @@
       autoCountEl.textContent = autoHarvesterCount;
       buyAutoBtn.disabled = (mames < autoHarvesterCost);
     }
+
+    // iOSのダブルタップズームをJavaScript側で強制防止
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (event) => {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
 
     // 5. 手動収穫
     harvestBtn.addEventListener('click', () => {
